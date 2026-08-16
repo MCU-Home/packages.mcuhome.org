@@ -1,0 +1,39 @@
+{
+  "expires": "2027-01-15T12:00:00Z",
+  "issued": "2026-01-15T12:00:00Z",
+  "min_client": 1,
+  "previous": null,
+  "publishers": [
+    {
+      "keyid": "605e26d9d7324328034f60b11362417fa222445d49c58c055644c3ad966c97fc",
+      "not_after": "2027-01-15T12:00:00Z",
+      "not_before": "2026-01-15T12:00:00Z",
+      "public": "Ei7NnYybP2+XoIYj81aLDDHmi3x+5wSMfuA//e0KWpw="
+    }
+  ],
+  "revoked": [],
+  "roots": {
+    "keys": [
+      {
+        "keyid": "605a1746ee8bc881f202770880e4d7a84798a3b29fda6cb17bca8352b69d906e",
+        "not_after": "2029-01-14T12:00:00Z",
+        "not_before": "2026-01-15T12:00:00Z",
+        "public": "+8n8K4q3S0n5C8v1fdQmEdHj9H/1eACq2QoboZVXeoM="
+      },
+      {
+        "keyid": "b91a2af20f172aca19ef0095a217bf8371684c2618f09b6d45aa76c81ae541a8",
+        "not_after": "2029-01-14T12:00:00Z",
+        "not_before": "2026-01-15T12:00:00Z",
+        "public": "DwasaI28VDsYIvOuoEm6acPo4iEAKV4LU/NoD9aDRbs="
+      },
+      {
+        "keyid": "691c8b7e3ee9df41b5d8b76301326eef61520c91a8956a3e156d4854688e6d50",
+        "not_after": "2029-01-14T12:00:00Z",
+        "not_before": "2026-01-15T12:00:00Z",
+        "public": "msANjGqKcZMozDJq80lDoRhlDNcyKCWHBQmWyouA5Bc="
+      }
+    ],
+    "threshold": 2
+  },
+  "version": 1
+}

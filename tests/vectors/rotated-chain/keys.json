@@ -1,0 +1,39 @@
+{
+  "expires": "2027-01-17T12:00:00Z",
+  "issued": "2026-01-17T12:00:00Z",
+  "min_client": 1,
+  "previous": "keys/20260116T120000Z.json",
+  "publishers": [
+    {
+      "keyid": "605e26d9d7324328034f60b11362417fa222445d49c58c055644c3ad966c97fc",
+      "not_after": "2027-01-15T12:00:00Z",
+      "not_before": "2026-01-15T12:00:00Z",
+      "public": "Ei7NnYybP2+XoIYj81aLDDHmi3x+5wSMfuA//e0KWpw="
+    }
+  ],
+  "revoked": [],
+  "roots": {
+    "keys": [
+      {
+        "keyid": "ba70b0a32ac519bac97e570e9a78035a3c992d1d443daeb88bb61b5cd72e9b79",
+        "not_after": "2029-01-14T12:00:00Z",
+        "not_before": "2026-01-15T12:00:00Z",
+        "public": "osQJ2mgcteIDgNX3/JHFxmk9j7tPG0cWEaRMKJsoyAk="
+      },
+      {
+        "keyid": "2bc6160dc2260e5a353f4f64cd8ace6cb1e320a364cabbfa7fef5ce5b4b2a6b6",
+        "not_after": "2029-01-14T12:00:00Z",
+        "not_before": "2026-01-15T12:00:00Z",
+        "public": "OBmV+6/JicbeyfiK1I2IYMVDSliug/eX795EN1BdSUY="
+      },
+      {
+        "keyid": "d6135e5065fb30e0d754d7891031bcac71e699379d88054135fd6e5b7e41a41c",
+        "not_after": "2029-01-14T12:00:00Z",
+        "not_before": "2026-01-15T12:00:00Z",
+        "public": "EoCwmp2e2ThWO+6+mOcXQwsJmFXs3JPLCfPnV2BUtb4="
+      }
+    ],
+    "threshold": 2
+  },
+  "version": 1
+}

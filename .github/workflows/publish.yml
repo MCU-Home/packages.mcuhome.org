@@ -1,0 +1,95 @@
+# SPDX-FileCopyrightText: 2026 The MCUHome Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+# Publication PULLS: this repository fetches a release asset from the SDK
+# repository, which is public, so nothing here needs write access to
+# another repository — no cross-repository token, no app, no long-lived
+# secret beyond the publisher key itself.
+#
+# It is workflow_dispatch only, on purpose. Releasing is a deliberate act
+# — the same reason the archive is built from a commit and cut once — and
+# a trigger that fired on its own would make it an accident waiting for a
+# tag.
+
+name: Publish a package
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The mcuhome-sdk release tag to publish, e.g. v0.2.0"
+        required: true
+      source:
+        description: "Which source to publish into"
+        required: true
+        default: sdk
+        type: choice
+        options: [sdk]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # Holds the publisher key, and is restricted to this branch so that
+    # no workflow on any other ref can reach it.
+    environment: production
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+
+      - name: Install
+        run: pip install -e .
+
+      - name: Fetch the release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${{ inputs.tag }}" \
+            --repo mcu-home/mcuhome-sdk \
+            --pattern 'mcuhome-sdk-*.tar.zst' \
+            --pattern 'mcuhome-sdk-*.tar.zst.sha256' \
+            --dir incoming
+
+      - name: Check the bytes against the sidecar the build wrote
+        run: |
+          cd incoming
+          sha256sum -c ./*.sha256
+
+      - name: Record it in the source
+        env:
+          MCUHOME_PUBLISHER_KEYS: ${{ secrets.PUBLISHER_KEY }}
+        run: |
+          set -euo pipefail
+          archive=$(ls incoming/mcuhome-sdk-*.tar.zst)
+          name=$(basename "$archive")
+          version=${name#mcuhome-sdk-}
+          version=${version%.tar.zst}
+          # The file has to be in the source before the index names it:
+          # `file` is relative to the source, and a mirror copies the
+          # directory, not a link.
+          cp "$archive" "$archive.sha256" "${{ inputs.source }}/"
+          python -m mcuhome_packages add \
+            --source "${{ inputs.source }}" \
+            --name mcuhome-sdk \
+            --version "$version" \
+            --file "$name" \
+            --sha256 "$(sha256sum "$archive" | cut -d' ' -f1)" \
+            --size "$(stat -c%s "$archive")"
+
+      - name: Verify what is about to be published
+        run: python verify.py "${{ inputs.source }}" --anchor anchor.json
+
+      - name: Commit
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "${{ inputs.source }}"
+          git commit -m "feat(${{ inputs.source }}): publish ${{ inputs.tag }}"
+          git push

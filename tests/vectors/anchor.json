@@ -1,0 +1,18 @@
+{
+  "keys": [
+    {
+      "keyid": "605a1746ee8bc881f202770880e4d7a84798a3b29fda6cb17bca8352b69d906e",
+      "public": "+8n8K4q3S0n5C8v1fdQmEdHj9H/1eACq2QoboZVXeoM="
+    },
+    {
+      "keyid": "b91a2af20f172aca19ef0095a217bf8371684c2618f09b6d45aa76c81ae541a8",
+      "public": "DwasaI28VDsYIvOuoEm6acPo4iEAKV4LU/NoD9aDRbs="
+    },
+    {
+      "keyid": "691c8b7e3ee9df41b5d8b76301326eef61520c91a8956a3e156d4854688e6d50",
+      "public": "msANjGqKcZMozDJq80lDoRhlDNcyKCWHBQmWyouA5Bc="
+    }
+  ],
+  "threshold": 2,
+  "version": 1
+}

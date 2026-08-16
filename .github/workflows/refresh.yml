@@ -1,0 +1,62 @@
+# SPDX-FileCopyrightText: 2026 The MCUHome Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+# Expiry is what bounds a freeze: a mirror serving a stale but validly
+# signed copy is caught because the copy runs out, not because anything
+# noticed. The price is that documents must be re-signed even when
+# nothing is released — this job is that price, and forgetting to pay it
+# is the classic way a package host breaks itself.
+#
+# It renews only the publisher-signed documents. keys.json is
+# root-signed, root keys are offline, and a refresh path that could
+# re-sign it would mean they were not. The status step at the end is how
+# its yearly renewal gets announced in time.
+
+name: Refresh signed documents
+
+on:
+  schedule:
+    - cron: "17 4 * * 1" # Mondays, 04:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+
+      - name: Install
+        run: pip install -e .
+
+      - name: Renew
+        env:
+          MCUHOME_PUBLISHER_KEYS: ${{ secrets.PUBLISHER_KEY }}
+        run: python -m mcuhome_packages refresh --source sdk
+
+      - name: Verify
+        run: python verify.py sdk --anchor anchor.json
+
+      - name: Commit
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git diff --quiet; then
+            echo "nothing changed"
+            exit 0
+          fi
+          git commit -am "chore: refresh signed documents"
+          git push
+
+      - name: Report remaining validity
+        # Runs last so a failing warning cannot cost the refresh above.
+        run: python -m mcuhome_packages status --source sdk

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCUHome packages</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 42rem; margin: 4rem auto; padding: 0 1rem; line-height: 1.6; color: #222; }
+  a { color: #0b62a4; }
+  code { background: #f2f2f2; padding: 0.1em 0.3em; border-radius: 3px; }
+  pre { background: #f2f2f2; padding: 0.8rem; border-radius: 4px; overflow-x: auto; }
+  h2 { margin-top: 2.5rem; font-size: 1.15rem; }
+</style>
+</head>
+<body>
+<h1>MCUHome packages</h1>
+
+<p>This host serves the hash-pinned packages MCUHome tools build against.
+Each directory below is a self-contained <strong>source</strong>: it
+carries its own keys, its own mirror list and its own index, and says
+nothing about any other directory.</p>
+
+<ul>
+  <li><a href="/sdk/">/sdk/</a> — the <code>mcuhome-sdk</code> source package a build compiles from</li>
+</ul>
+
+<h2>What a source contains</h2>
+
+<pre>keys.json      keys.json.sig      the root keys, and the publisher keys they authorise
+mirrors.json   mirrors.json.sig   where this source's data may be fetched
+index.json     index.json.sig     which file, and which bytes, for every version
+&lt;package files&gt;                   plus a .sha256 sidecar for each</pre>
+
+<p>Everything is signed with Ed25519. The signature covers the exact
+bytes of the document as served, and the hashes inside the index reach
+from there to every package file — so a mirror can be untrusted without
+anything else being.</p>
+
+<h2>Verifying a copy</h2>
+
+<p>The reference verifier is a single file. Point it at a source
+directory you already have and at the root key set you trust:</p>
+
+<pre>verify.py sdk/ --anchor anchor.json</pre>
+
+<p>It is the executable form of the rule tools follow, and it is the
+same code the test corpus in the repository is checked against.</p>
+
+<h2>Mirroring</h2>
+
+<p>A mirror is a copy of a source directory — no path rewriting, no
+per-mirror layout. Copy the whole directory, serve it over HTTPS under
+your own name, and it is complete. Mirrors may carry one source and not
+another. To be listed, open an issue in the repository below.</p>
+
+<p>Source code and the publishing workflows:
+<a href="https://github.com/mcu-home/packages.mcuhome.org">github.com/mcu-home/packages.mcuhome.org</a></p>
+</body>
+</html>

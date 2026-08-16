@@ -1,0 +1,19 @@
+{
+  "expires": "2026-02-14T12:02:00Z",
+  "issued": "2026-01-15T12:02:00Z",
+  "min_client": 1,
+  "packages": {},
+  "parts": [
+    {
+      "covers": {
+        "versions": {
+          "max": "1.9999.0",
+          "min": "1.0.0"
+        }
+      },
+      "file": "index-1.0.0-1.9999.0-e3270f60b85ccb71.json",
+      "sha256": "e3270f60b85ccb71aa5443e83f86e94db5687a12dcffef57c2687c8cfbfadceb"
+    }
+  ],
+  "version": 1
+}

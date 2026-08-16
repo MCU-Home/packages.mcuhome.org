@@ -1,0 +1,16 @@
+{
+  "expires": "2025-12-16T12:01:00Z",
+  "issued": "2025-11-16T12:01:00Z",
+  "min_client": 1,
+  "packages": {
+    "mcuhome-sdk": {
+      "2.4.0": {
+        "file": "mcuhome-sdk-2.4.0.tar.zst",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "size": 512345
+      }
+    }
+  },
+  "parts": [],
+  "version": 1
+}

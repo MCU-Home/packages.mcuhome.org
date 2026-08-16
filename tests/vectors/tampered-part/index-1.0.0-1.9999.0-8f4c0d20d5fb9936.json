@@ -1,0 +1,11 @@
+{
+  "packages": {
+    "mcuhome-sdk": {
+      "1.2.0": {
+        "file": "old.tar.zst",
+        "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "size": 4096
+      }
+    }
+  }
+}
