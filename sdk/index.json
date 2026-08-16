@@ -1,8 +1,16 @@
 {
-  "expires": "2026-09-15T06:52:50Z",
-  "issued": "2026-08-16T06:52:50Z",
+  "expires": "2026-09-15T11:49:22Z",
+  "issued": "2026-08-16T11:49:22Z",
   "min_client": 1,
-  "packages": {},
+  "packages": {
+    "mcuhome-sdk": {
+      "0.1.0.dev1": {
+        "file": "mcuhome-sdk-0.1.0.dev1.tar.zst",
+        "sha256": "1b0bbf89ecb889299a543c6a7d0b4375890d900d12145cbbc8546a994f9597b3",
+        "size": 265477
+      }
+    }
+  },
   "parts": [],
   "version": 1
 }
