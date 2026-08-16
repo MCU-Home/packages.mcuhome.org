@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Browse MCUHome packages</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 64rem; margin: 3rem auto; padding: 0 1rem; line-height: 1.6; color: #222; }
+  a { color: #0b62a4; }
+  code { background: #f2f2f2; padding: 0.1em 0.3em; border-radius: 3px; font-size: 0.9em; }
+  h1 { margin-bottom: 0.2rem; }
+  .lead { color: #555; margin-top: 0; }
+  .source { border: 1px solid #e2e2e2; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; }
+  .source h2 { margin: 0 0 0.2rem; font-size: 1.05rem; }
+  .source p { margin: 0.2rem 0; color: #555; }
+  .meta { font-size: 0.85em; color: #666; }
+  .meta span { margin-right: 1rem; white-space: nowrap; }
+  .ok { color: #1a7f37; } .warn { color: #9a6700; } .bad { color: #b42318; }
+  .controls { display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; margin: 1.5rem 0 0.5rem; }
+  input[type=search] { flex: 1 1 16rem; padding: 0.4rem 0.6rem; border: 1px solid #ccc; border-radius: 4px; font: inherit; }
+  select, button { padding: 0.35rem 0.6rem; border: 1px solid #ccc; border-radius: 4px; background: #fff; font: inherit; }
+  button:disabled { color: #aaa; }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid #eee; white-space: nowrap; }
+  th { cursor: pointer; user-select: none; border-bottom: 2px solid #ddd; }
+  th::after { content: ''; }
+  th[data-dir=asc]::after { content: ' ▲'; } th[data-dir=desc]::after { content: ' ▼'; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .hash { cursor: copy; }
+  .page { display: flex; gap: 0.6rem; align-items: center; margin-top: 0.8rem; font-size: 0.9em; color: #555; }
+  .empty { padding: 1.5rem; color: #666; text-align: center; }
+  .error { background: #fff4f3; border: 1px solid #f0c4c0; border-radius: 6px; padding: 0.8rem 1rem; }
+</style>
+</head>
+<body>
+<h1>Browse packages</h1>
+<p class="lead">Everything <a href="/">packages.mcuhome.org</a> publishes, read live out of
+each source's signed index. <a href="/">Back to the front page</a>.</p>
+
+<div id="sources"></div>
+
+<div class="controls">
+  <input type="search" id="q" placeholder="Filter by source, package, version or hash…" autocomplete="off">
+  <select id="size"><option>25</option><option>50</option><option>100</option><option value="0">all</option></select>
+</div>
+
+<div class="tablewrap">
+  <table>
+    <thead><tr>
+      <th data-key="source">Source</th>
+      <th data-key="name">Package</th>
+      <th data-key="version">Version</th>
+      <th data-key="size">Size</th>
+      <th data-key="sha256">SHA-256</th>
+      <th>Files</th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+</div>
+<div id="status" class="empty">Loading…</div>
+<div class="page" id="pager" hidden>
+  <button id="prev">← Previous</button><span id="range"></span><button id="next">Next →</button>
+</div>
+
+<noscript><p class="error">This page reads the indexes in your browser, so it needs JavaScript.
+Without it, fetch <code>/sources.json</code> and each source's <code>index.json</code> directly —
+they are plain files and nothing here is generated server-side.</p></noscript>
+
+<script>
+// No external anything: this host exists to make integrity checkable, and a
+// script fetched from somebody else's server would be the one moving part
+// that could rewrite the hashes on the page. Sorting, filtering and paging
+// are a hundred lines; a dependency is forever.
+"use strict";
+
+const el = (tag, text, attrs) => {
+  const node = document.createElement(tag);
+  if (text !== undefined && text !== null) node.textContent = String(text);
+  for (const [k, v] of Object.entries(attrs || {})) node.setAttribute(k, v);
+  return node;
+};
+
+const getJSON = async (url) => {
+  const response = await fetch(url, { cache: "no-cache" });
+  if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
+  return response.json();
+};
+
+const humanSize = (bytes) =>
+  bytes >= 1048576 ? (bytes / 1048576).toFixed(1) + " MiB" : Math.round(bytes / 1024) + " KiB";
+
+// A display sort, not PEP 440: numeric runs compare as numbers, and a
+// version that continues into a pre-release marker sorts below the release
+// it belongs to. Good enough to look right; the resolver is what decides.
+const versionTokens = (v) => v.match(/\d+|\D+/g) || [];
+const isPre = (rest) => /dev|a|b|rc/.test(rest);
+function compareVersion(a, b) {
+  const ta = versionTokens(a), tb = versionTokens(b);
+  for (let i = 0; i < Math.max(ta.length, tb.length); i++) {
+    const x = ta[i], y = tb[i];
+    if (x === undefined) return isPre(tb.slice(i).join("")) ? 1 : -1;
+    if (y === undefined) return isPre(ta.slice(i).join("")) ? -1 : 1;
+    if (/^\d+$/.test(x) && /^\d+$/.test(y)) { if (+x !== +y) return +x - +y; }
+    else if (x !== y) return x < y ? -1 : 1;
+  }
+  return 0;
+}
+
+const state = { rows: [], view: [], sort: { key: "version", dir: "desc" }, page: 0, size: 25 };
+
+function freshness(document_) {
+  const expires = Date.parse(document_.expires);
+  if (!expires) return null;
+  const days = Math.floor((expires - Date.now()) / 86400000);
+  if (days < 0) return { className: "bad", text: `expired ${-days} day(s) ago` };
+  if (days < 7) return { className: "warn", text: `expires in ${days} day(s)` };
+  return { className: "ok", text: `valid for ${days} more day(s)` };
+}
+
+function describeSource(source, index, count) {
+  const card = el("div", null, { class: "source" });
+  card.append(el("h2", source.title || source.name));
+  if (source.description) card.append(el("p", source.description));
+
+  const meta = el("p", null, { class: "meta" });
+  meta.append(el("span", `${count} package${count === 1 ? "" : "s"}`));
+  if (index) {
+    meta.append(el("span", `issued ${(index.issued || "").replace("T", " ").replace("Z", " UTC")}`));
+    const state_ = freshness(index);
+    if (state_) meta.append(el("span", state_.text, { class: state_.className }));
+  }
+  card.append(meta);
+
+  const links = el("p", null, { class: "meta" });
+  for (const file of ["index.json", "keys.json", "mirrors.json"]) {
+    const span = el("span");
+    span.append(el("a", file, { href: source.path + file }));
+    links.append(span);
+  }
+  card.append(links);
+  return card;
+}
+
+// An index's entries live in the head and in any parts it names — a part
+// is fetched by the name and hash the head records, so listing only the
+// head would silently under-report a split index.
+async function collect(source) {
+  const index = await getJSON(source.path + "index.json");
+  const documents = [index];
+  for (const part of index.parts || []) {
+    documents.push(await getJSON(source.path + part.file));
+  }
+  const rows = [];
+  for (const document_ of documents) {
+    for (const [name, versions] of Object.entries(document_.packages || {})) {
+      for (const [version, entry] of Object.entries(versions)) {
+        rows.push({
+          source: source.name,
+          name,
+          version,
+          size: Number(entry.size) || 0,
+          sha256: String(entry.sha256 || ""),
+          href: source.path + entry.file,
+          file: entry.file,
+        });
+      }
+    }
+  }
+  return { index, rows };
+}
+
+function render() {
+  const needle = document.getElementById("q").value.trim().toLowerCase();
+  state.view = state.rows.filter((row) =>
+    !needle || `${row.source} ${row.name} ${row.version} ${row.sha256}`.toLowerCase().includes(needle)
+  );
+
+  const { key, dir } = state.sort;
+  const sign = dir === "asc" ? 1 : -1;
+  state.view.sort((a, b) => sign * (
+    key === "version" ? compareVersion(a.version, b.version)
+    : key === "size" ? a.size - b.size
+    : String(a[key]).localeCompare(String(b[key]))
+  ));
+
+  const size = state.size || state.view.length || 1;
+  const pages = Math.max(1, Math.ceil(state.view.length / size));
+  state.page = Math.min(state.page, pages - 1);
+  const from = state.page * size;
+  const shown = state.view.slice(from, from + size);
+
+  const body = document.getElementById("rows");
+  body.replaceChildren();
+  for (const row of shown) {
+    const tr = el("tr");
+    tr.append(el("td", row.source), el("td", row.name), el("td", row.version));
+    tr.append(el("td", humanSize(row.size), { class: "num", title: `${row.size} bytes` }));
+
+    const hash = el("td");
+    const code = el("code", row.sha256.slice(0, 12) + "…", {
+      class: "hash", title: row.sha256 + "  (click to copy)",
+    });
+    code.addEventListener("click", () => {
+      navigator.clipboard?.writeText(row.sha256);
+      code.textContent = "copied";
+      setTimeout(() => { code.textContent = row.sha256.slice(0, 12) + "…"; }, 900);
+    });
+    hash.append(code);
+    tr.append(hash);
+
+    const files = el("td");
+    files.append(el("a", row.file, { href: row.href }), document.createTextNode(" · "));
+    files.append(el("a", "sha256", { href: row.href + ".sha256" }));
+    tr.append(files);
+    body.append(tr);
+  }
+
+  const status = document.getElementById("status");
+  status.hidden = state.view.length > 0;
+  if (!state.view.length) {
+    status.textContent = state.rows.length
+      ? "Nothing matches that filter."
+      : "No packages published yet.";
+  }
+
+  const pager = document.getElementById("pager");
+  pager.hidden = pages < 2;
+  document.getElementById("range").textContent =
+    `${from + 1}–${from + shown.length} of ${state.view.length}`;
+  document.getElementById("prev").disabled = state.page === 0;
+  document.getElementById("next").disabled = state.page >= pages - 1;
+
+  for (const th of document.querySelectorAll("th[data-key]")) {
+    if (th.dataset.key === key) th.setAttribute("data-dir", dir);
+    else th.removeAttribute("data-dir");
+  }
+}
+
+async function load() {
+  const container = document.getElementById("sources");
+  try {
+    const catalog = await getJSON("sources.json");
+    for (const source of catalog.sources || []) {
+      try {
+        const { index, rows } = await collect(source);
+        state.rows.push(...rows);
+        container.append(describeSource(source, index, rows.length));
+      } catch (failure) {
+        const card = describeSource(source, null, 0);
+        card.append(el("p", `Could not be read: ${failure.message}`, { class: "bad" }));
+        container.append(card);
+      }
+    }
+  } catch (failure) {
+    container.append(el("div", `Could not read sources.json: ${failure.message}`, { class: "error" }));
+  }
+  render();
+}
+
+document.getElementById("q").addEventListener("input", () => { state.page = 0; render(); });
+document.getElementById("size").addEventListener("change", (event) => {
+  state.size = Number(event.target.value); state.page = 0; render();
+});
+document.getElementById("prev").addEventListener("click", () => { state.page--; render(); });
+document.getElementById("next").addEventListener("click", () => { state.page++; render(); });
+for (const th of document.querySelectorAll("th[data-key]")) {
+  th.addEventListener("click", () => {
+    const key = th.dataset.key;
+    state.sort = { key, dir: state.sort.key === key && state.sort.dir === "desc" ? "asc" : "desc" };
+    state.page = 0;
+    render();
+  });
+}
+load();
+</script>
+</body>
+</html>

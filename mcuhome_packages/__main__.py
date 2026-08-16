@@ -26,6 +26,7 @@ import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from mcuhome_packages.catalog import CATALOG_FILE, write_catalog
 from mcuhome_packages.documents import dump, parse_stamp, stamp
 from mcuhome_packages.keys import (
     PUBLIC_SUFFIX,
@@ -135,6 +136,8 @@ def main(argv: list[str]) -> int:
     prune.add_argument("--source", type=Path, nargs="+", required=True)
     prune.add_argument("--delete", action="store_true")
 
+    commands.add_parser("catalog", help="write sources.json, the site's unsigned directory")
+
     arguments = parser.parse_args(argv)
     now = _now(arguments.now)
 
@@ -233,6 +236,11 @@ def main(argv: list[str]) -> int:
                 file=sys.stderr,
             )
         return worst
+
+    if arguments.command == "catalog":
+        written = write_catalog(Path("publishing.json"), Path(CATALOG_FILE))
+        print(f"{CATALOG_FILE}: {', '.join(written) or 'no sources'}")
+        return 0
 
     if arguments.command == "prune":
         cutoff = now - timedelta(days=PRUNE_GRACE_DAYS)

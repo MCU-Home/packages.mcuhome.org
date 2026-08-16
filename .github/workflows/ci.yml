@@ -39,6 +39,12 @@ jobs:
       - name: Test
         run: pytest -q
 
+      - name: The catalogue must match the declared sources
+        # sources.json is generated; a stale one is a directory that lies.
+        run: |
+          python -m mcuhome_packages catalog
+          git diff --exit-code sources.json
+
       - name: Verify the published sources
         # Every source publishing.json declares, so adding one needs no
         # workflow change.

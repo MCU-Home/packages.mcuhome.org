@@ -1,0 +1,12 @@
+{
+  "note": "Discovery for the browsable page, and unsigned on purpose. Nothing above a source has authority: every source carries its own root keys, mirror list and signed index, and a tool resolves the source it was configured with — it never learns of one from here.",
+  "sources": [
+    {
+      "description": "The source package a build compiles from: the Zephyr module, the C runtime, the components and the code generator.",
+      "name": "sdk",
+      "path": "sdk/",
+      "title": "MCUHome SDK"
+    }
+  ],
+  "version": 1
+}

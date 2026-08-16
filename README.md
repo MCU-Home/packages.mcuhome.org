@@ -31,6 +31,15 @@ sdk/
 Deliberately **not** here: container images (GHCR), Python
 distributions (PyPI), OTA images.
 
+[`browser.html`](browser.html) lists every package of every source in one
+searchable table, read live out of the signed indexes — split indexes
+included. It loads no external script: a page that displays hashes must
+not execute code from somebody else's server, so filtering, sorting and
+paging are a hundred lines of vanilla JavaScript and a test keeps it that
+way. `sources.json` is the same list as data, generated from
+`publishing.json`; it is **unsigned discovery only** — nothing above a
+source has authority, and a tool never learns of a source from there.
+
 ## Verifying
 
 `verify.py` is the normative reference implementation — the rule every
@@ -67,10 +76,12 @@ knows what it is publishing. A second source is an entry in that file,
 not a second workflow; CI and the weekly refresh iterate over the same
 list.
 
-```sh
-# Publish an upstream release tag into a source
-gh workflow run publish.yml -f source=sdk -f tag=v0.1.0
+Publishing itself is a click, not a command:
 
+> **Actions → "Publish a package" → Run workflow**, with `source` and the
+> upstream `tag`.
+
+```sh
 # Renew the publisher-signed documents before they expire (weekly, in CI)
 python -m mcuhome_packages refresh --source sdk
 

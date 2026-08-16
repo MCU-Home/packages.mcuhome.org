@@ -2,9 +2,11 @@
   "note": "Operational configuration of this repository, not published metadata: it says which upstream release feeds which source. Nothing verifies against it and no client reads it — the signed documents inside each source are what count.",
   "sources": {
     "sdk": {
-      "repository": "mcu-home/mcuhome-sdk",
+      "asset": "mcuhome-sdk-*.tar.zst",
+      "description": "The source package a build compiles from: the Zephyr module, the C runtime, the components and the code generator.",
       "package": "mcuhome-sdk",
-      "asset": "mcuhome-sdk-*.tar.zst"
+      "repository": "mcu-home/mcuhome-sdk",
+      "title": "MCUHome SDK"
     }
   },
   "version": 1
