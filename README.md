@@ -32,13 +32,21 @@ Deliberately **not** here: container images (GHCR), Python
 distributions (PyPI), OTA images.
 
 [`browser.html`](browser.html) lists every package of every source in one
-searchable table, read live out of the signed indexes — split indexes
-included. It loads no external script: a page that displays hashes must
-not execute code from somebody else's server, so filtering, sorting and
-paging are a hundred lines of vanilla JavaScript and a test keeps it that
-way. `sources.json` is the same list as data, generated from
-`publishing.json`; it is **unsigned discovery only** — nothing above a
-source has authority, and a tool never learns of a source from there.
+table — split indexes included — with per-source switches, search,
+sorting and paging. It is an **inspection tool, not a distribution
+channel**: it verifies nothing and *cannot*, because a page served by
+this host can say nothing about this host. A host serving a modified
+package would serve a matching hash and this very page, with the check
+taken out. The page says so in a banner, and every download goes through
+a dialog that says it again; the anchor lives in the tool for exactly
+this reason.
+
+It loads no external script either: a page that displays hashes must not
+execute code from somebody else's server, so its hundred lines are
+vanilla JavaScript and a test keeps it that way. `sources.json` is the
+same list as data, generated from `publishing.json`; it is **unsigned
+discovery only** — nothing above a source has authority, and a tool never
+learns of a source from there.
 
 ## Verifying
 

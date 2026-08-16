@@ -75,6 +75,35 @@ def test_a_page_fetches_only_from_this_host(page: str) -> None:
         assert "http" not in target, f"{page}: fetch({target}) leaves this host"
 
 
+def test_the_inspection_page_admits_it_verifies_nothing() -> None:
+    """The page is served by the host it reads, so it can attest to nothing.
+
+    A host serving a modified package would serve a matching hash and
+    this very page, with the check taken out. Showing signed-looking data
+    without saying that is worse than showing nothing: it manufactures
+    confidence the visitor has no way to earn.
+    """
+    html = (ROOT / "browser.html").read_text(encoding="utf-8")
+    assert "cannot verify" in html or "verifies nothing" in html
+    assert "not verified" in html
+    # And the caveat has to reach a downloader, not only a careful reader.
+    assert "showModal" in html, "every download passes the warning dialog"
+    assert "askBeforeDownloading" in html
+
+
+def test_no_page_sells_the_download_as_protected() -> None:
+    """Wording is the whole risk here: 'signed index' reads as 'safe file'."""
+    for page in PAGES:
+        html = (ROOT / page).read_text(encoding="utf-8")
+        assert "signed index" not in html.lower()
+
+
+def test_sources_can_be_switched_off_not_only_filtered() -> None:
+    html = (ROOT / "browser.html").read_text(encoding="utf-8")
+    assert 'type: "checkbox"' in html or 'type="checkbox"' in html
+    assert "state.enabled" in html
+
+
 def test_the_browser_reads_the_files_the_site_actually_has() -> None:
     html = (ROOT / "browser.html").read_text(encoding="utf-8")
     assert CATALOG_FILE in html

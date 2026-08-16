@@ -3,45 +3,65 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Browse MCUHome packages</title>
+<title>Inspect MCUHome packages</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 64rem; margin: 3rem auto; padding: 0 1rem; line-height: 1.6; color: #222; }
   a { color: #0b62a4; }
   code { background: #f2f2f2; padding: 0.1em 0.3em; border-radius: 3px; font-size: 0.9em; }
+  pre { background: #f2f2f2; padding: 0.7rem 0.9rem; border-radius: 4px; overflow-x: auto; font-size: 0.88rem; }
   h1 { margin-bottom: 0.2rem; }
   .lead { color: #555; margin-top: 0; }
+  .banner { background: #fff8e6; border: 1px solid #e6c65c; border-left-width: 5px; border-radius: 5px; padding: 0.8rem 1rem; margin: 1.5rem 0; }
+  .banner strong { display: block; margin-bottom: 0.2rem; }
+  .banner p { margin: 0.4rem 0 0; font-size: 0.94rem; }
   .source { border: 1px solid #e2e2e2; border-radius: 6px; padding: 0.8rem 1rem; margin: 1rem 0; }
-  .source h2 { margin: 0 0 0.2rem; font-size: 1.05rem; }
+  .source .head { display: flex; align-items: center; gap: 0.5rem; }
+  .source .head label { font-weight: 600; font-size: 1.05rem; cursor: pointer; }
   .source p { margin: 0.2rem 0; color: #555; }
   .meta { font-size: 0.85em; color: #666; }
   .meta span { margin-right: 1rem; white-space: nowrap; }
   .ok { color: #1a7f37; } .warn { color: #9a6700; } .bad { color: #b42318; }
   .controls { display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; margin: 1.5rem 0 0.5rem; }
   input[type=search] { flex: 1 1 16rem; padding: 0.4rem 0.6rem; border: 1px solid #ccc; border-radius: 4px; font: inherit; }
-  select, button { padding: 0.35rem 0.6rem; border: 1px solid #ccc; border-radius: 4px; background: #fff; font: inherit; }
-  button:disabled { color: #aaa; }
+  select, button { padding: 0.35rem 0.6rem; border: 1px solid #ccc; border-radius: 4px; background: #fff; font: inherit; cursor: pointer; }
+  button:disabled { color: #aaa; cursor: default; }
   .tablewrap { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
   th, td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid #eee; white-space: nowrap; }
   th { cursor: pointer; user-select: none; border-bottom: 2px solid #ddd; }
-  th::after { content: ''; }
   th[data-dir=asc]::after { content: ' ▲'; } th[data-dir=desc]::after { content: ' ▼'; }
   td.num { text-align: right; font-variant-numeric: tabular-nums; }
   .hash { cursor: copy; }
   .page { display: flex; gap: 0.6rem; align-items: center; margin-top: 0.8rem; font-size: 0.9em; color: #555; }
   .empty { padding: 1.5rem; color: #666; text-align: center; }
   .error { background: #fff4f3; border: 1px solid #f0c4c0; border-radius: 6px; padding: 0.8rem 1rem; }
+  dialog { max-width: 34rem; border: 1px solid #ccc; border-radius: 8px; padding: 1.2rem 1.4rem; color: #222; }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+  dialog h2 { margin-top: 0; font-size: 1.15rem; color: #b42318; }
+  dialog .actions { display: flex; gap: 0.6rem; justify-content: flex-end; margin-top: 1.2rem; }
+  dialog .go { padding: 0.35rem 0.6rem; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #555; }
 </style>
 </head>
 <body>
-<h1>Browse packages</h1>
-<p class="lead">Everything <a href="/">packages.mcuhome.org</a> publishes, read live out of
-each source's signed index. <a href="/">Back to the front page</a>.</p>
+<h1>Inspect what is published</h1>
+<p class="lead">What this host currently serves, as it serves it — for looking, for debugging a
+mirror, for comparing against what your tool resolved. <a href="/">Back to the front page</a>.</p>
+
+<div class="banner">
+  <strong>Nothing on this page is verified, and this page cannot verify it.</strong>
+  <p>The indexes it reads <em>are</em> signed — but the check happens against a trust anchor a
+  tool carries with it, and a web page has nowhere to carry one. This page, the hashes on it and
+  the files it links to all arrive from the same host: one that served you a modified package
+  would have served you this page too, with the check taken out.</p>
+  <p><strong>So do not install anything you fetched here.</strong> The MCUHome command line
+  resolves, downloads and verifies packages by itself, against an anchor built into the tool —
+  it does the real thing, and it does it on every build.</p>
+</div>
 
 <div id="sources"></div>
 
 <div class="controls">
-  <input type="search" id="q" placeholder="Filter by source, package, version or hash…" autocomplete="off">
+  <input type="search" id="q" placeholder="Filter by package, version or hash…" autocomplete="off">
   <select id="size"><option>25</option><option>50</option><option>100</option><option value="0">all</option></select>
 </div>
 
@@ -52,7 +72,7 @@ each source's signed index. <a href="/">Back to the front page</a>.</p>
       <th data-key="name">Package</th>
       <th data-key="version">Version</th>
       <th data-key="size">Size</th>
-      <th data-key="sha256">SHA-256</th>
+      <th data-key="sha256" title="As this host served it — useful to compare against what your tool resolved, never as proof on its own">SHA-256 (as served)</th>
       <th>Files</th>
     </tr></thead>
     <tbody id="rows"></tbody>
@@ -63,15 +83,36 @@ each source's signed index. <a href="/">Back to the front page</a>.</p>
   <button id="prev">← Previous</button><span id="range"></span><button id="next">Next →</button>
 </div>
 
+<dialog id="warn">
+  <h2>This download is not verified</h2>
+  <p>You are about to fetch <code id="what"></code> straight from this host. Nothing checks it:
+  not this page, which cannot, and not your browser.</p>
+  <p>The hash shown next to it came from the same place as the file, so it proves nothing on its
+  own — a host serving a modified package would serve a matching hash and this very page.</p>
+  <p>The MCUHome command line is what does this properly: it carries its own trust anchor,
+  verifies the source's signatures and the package's bytes, and refuses on a mismatch. If you
+  continue anyway, check what you got against an anchor you already trust:</p>
+  <pre>python verify.py &lt;directory&gt; --anchor &lt;your anchor.json&gt;</pre>
+  <div class="actions">
+    <button id="cancel" autofocus>Cancel</button>
+    <a class="go" id="go" href="#" download>Download anyway</a>
+  </div>
+</dialog>
+
 <noscript><p class="error">This page reads the indexes in your browser, so it needs JavaScript.
 Without it, fetch <code>/sources.json</code> and each source's <code>index.json</code> directly —
-they are plain files and nothing here is generated server-side.</p></noscript>
+they are plain files and nothing here is generated server-side. Verifying them is
+<code>verify.py</code>'s job, never a web page's.</p></noscript>
 
 <script>
-// No external anything: this host exists to make integrity checkable, and a
-// script fetched from somebody else's server would be the one moving part
-// that could rewrite the hashes on the page. Sorting, filtering and paging
-// are a hundred lines; a dependency is forever.
+// No external anything. This host exists to make integrity checkable, and a
+// script fetched from somebody else's server would be one more party able to
+// rewrite what a visitor reads. Sorting, filtering and paging are a hundred
+// lines; a dependency is forever.
+//
+// What this page can never do is verify: it is served by the host it reads,
+// so a host that lies would simply serve a page that does not check. That is
+// not a gap to close here — it is why the trust anchor lives in the tool.
 "use strict";
 
 const el = (tag, text, attrs) => {
@@ -107,7 +148,14 @@ function compareVersion(a, b) {
   return 0;
 }
 
-const state = { rows: [], view: [], sort: { key: "version", dir: "desc" }, page: 0, size: 25 };
+const state = {
+  rows: [],
+  view: [],
+  enabled: new Set(),           // sources ticked on; a filter you can see, not guess
+  sort: { key: "version", dir: "desc" },
+  page: 0,
+  size: 25,
+};
 
 function freshness(document_) {
   const expires = Date.parse(document_.expires);
@@ -120,7 +168,20 @@ function freshness(document_) {
 
 function describeSource(source, index, count) {
   const card = el("div", null, { class: "source" });
-  card.append(el("h2", source.title || source.name));
+
+  const head = el("div", null, { class: "head" });
+  const box = el("input", null, { type: "checkbox", id: `src-${source.name}` });
+  box.checked = Boolean(index);
+  box.disabled = !index;
+  box.addEventListener("change", () => {
+    if (box.checked) state.enabled.add(source.name);
+    else state.enabled.delete(source.name);
+    state.page = 0;
+    render();
+  });
+  head.append(box, el("label", source.title || source.name, { for: `src-${source.name}` }));
+  card.append(head);
+
   if (source.description) card.append(el("p", source.description));
 
   const meta = el("p", null, { class: "meta" });
@@ -170,10 +231,26 @@ async function collect(source) {
   return { index, rows };
 }
 
+// Every download goes past the warning first. Right-clicking a link still
+// gets around it, which is why the banner above is permanent rather than
+// something this dialog replaces.
+const dialog = document.getElementById("warn");
+function askBeforeDownloading(event, row) {
+  event.preventDefault();
+  document.getElementById("what").textContent = row.file;
+  const go = document.getElementById("go");
+  go.setAttribute("href", row.href);
+  go.setAttribute("download", row.file);
+  dialog.showModal();
+}
+document.getElementById("cancel").addEventListener("click", () => dialog.close());
+document.getElementById("go").addEventListener("click", () => dialog.close());
+
 function render() {
   const needle = document.getElementById("q").value.trim().toLowerCase();
   state.view = state.rows.filter((row) =>
-    !needle || `${row.source} ${row.name} ${row.version} ${row.sha256}`.toLowerCase().includes(needle)
+    state.enabled.has(row.source) &&
+    (!needle || `${row.name} ${row.version} ${row.sha256}`.toLowerCase().includes(needle))
   );
 
   const { key, dir } = state.sort;
@@ -210,7 +287,9 @@ function render() {
     tr.append(hash);
 
     const files = el("td");
-    files.append(el("a", row.file, { href: row.href }), document.createTextNode(" · "));
+    const link = el("a", row.file, { href: row.href });
+    link.addEventListener("click", (event) => askBeforeDownloading(event, row));
+    files.append(link, document.createTextNode(" · "));
     files.append(el("a", "sha256", { href: row.href + ".sha256" }));
     tr.append(files);
     body.append(tr);
@@ -219,9 +298,11 @@ function render() {
   const status = document.getElementById("status");
   status.hidden = state.view.length > 0;
   if (!state.view.length) {
-    status.textContent = state.rows.length
-      ? "Nothing matches that filter."
-      : "No packages published yet.";
+    status.textContent = !state.rows.length
+      ? "No packages published yet."
+      : !state.enabled.size
+        ? "Every source is switched off."
+        : "Nothing matches that filter.";
   }
 
   const pager = document.getElementById("pager");
@@ -245,6 +326,7 @@ async function load() {
       try {
         const { index, rows } = await collect(source);
         state.rows.push(...rows);
+        state.enabled.add(source.name);
         container.append(describeSource(source, index, rows.length));
       } catch (failure) {
         const card = describeSource(source, null, 0);
