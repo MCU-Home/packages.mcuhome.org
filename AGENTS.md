@@ -23,6 +23,7 @@ follows. Read it before changing anything about a document's shape.
 |---|---|
 | `sdk/` | **published content** — one source: its keys, mirror list, index and package files |
 | `anchor.json` | the root key set, published so it can be *compared* against what a tool ships. Never something a client fetches to verify with |
+| `publishing.json` | operational configuration: which upstream release feeds which source. Unsigned and read by nothing outside this repository's workflows — adding a source is an entry here, not a new workflow |
 | `verify.py` | the **normative** reference implementation of the client's verification rule (ADR 0025 §9). Single file, standalone by design, stdlib + `cryptography` |
 | `mcuhome_packages/` | the publishing tooling: key material, document header and bytes, source operations, the command line over them |
 | `tests/vectors/` | the committed corpus — valid and broken sources, for testing *client* implementations before they exist |

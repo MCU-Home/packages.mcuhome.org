@@ -42,9 +42,18 @@ change a verdict.
 python verify.py sdk/ --anchor <anchor.json>
 ```
 
-An **anchor** is the root key set you trust: key ids, public keys,
-threshold. It is configuration, never something this host supplies — a
-client that fetched its anchor would be trusting the host again.
+An **anchor** is the root key set you trust: the *public* halves of the
+three root keys, their key ids, and the threshold. Deliberately nothing
+else — the publisher keys are not in it, because they are learned from
+`keys.json`, which the roots sign. That is what lets a publisher key
+rotate yearly without any tool being updated.
+
+It is configuration, never something this host supplies. A tool carries
+the anchor for our sources built in (it ships inside the release, on the
+same trust as the tool itself); an operator of a private registry
+supplies theirs out of band. `anchor.json` is published here so it can be
+**compared** against what a tool has built in — downloading it at
+verification time is not verification, it is trusting the host again.
 
 ## Publishing
 
@@ -52,9 +61,15 @@ Publication **pulls**: this repository fetches a release asset from the
 SDK repository, so no repository holds write access to another and there
 is no cross-repository secret.
 
+Which upstream release feeds which source is declared in
+`publishing.json` — that, and the `source` input, is how the workflow
+knows what it is publishing. A second source is an entry in that file,
+not a second workflow; CI and the weekly refresh iterate over the same
+list.
+
 ```sh
-# Publish version X of the SDK (normally: run the publish workflow)
-gh workflow run publish.yml -f tag=vX
+# Publish an upstream release tag into a source
+gh workflow run publish.yml -f source=sdk -f tag=v0.1.0
 
 # Renew the publisher-signed documents before they expire (weekly, in CI)
 python -m mcuhome_packages refresh --source sdk

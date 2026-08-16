@@ -41,10 +41,15 @@ jobs:
       - name: Renew
         env:
           MCUHOME_PUBLISHER_KEYS: ${{ secrets.PUBLISHER_KEY }}
-        run: python -m mcuhome_packages refresh --source sdk
+        run: |
+          python -m mcuhome_packages refresh \
+            --source $(jq -r '.sources | keys[]' publishing.json | tr '\n' ' ')
 
       - name: Verify
-        run: python verify.py sdk --anchor anchor.json
+        run: |
+          for source in $(jq -r '.sources | keys[]' publishing.json); do
+            python verify.py "$source" --anchor anchor.json
+          done
 
       - name: Commit
         run: |
@@ -59,4 +64,6 @@ jobs:
 
       - name: Report remaining validity
         # Runs last so a failing warning cannot cost the refresh above.
-        run: python -m mcuhome_packages status --source sdk
+        run: |
+          python -m mcuhome_packages status \
+            --source $(jq -r '.sources | keys[]' publishing.json | tr '\n' ' ')

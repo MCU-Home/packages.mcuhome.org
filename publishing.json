@@ -1,0 +1,11 @@
+{
+  "note": "Operational configuration of this repository, not published metadata: it says which upstream release feeds which source. Nothing verifies against it and no client reads it — the signed documents inside each source are what count.",
+  "sources": {
+    "sdk": {
+      "repository": "mcu-home/mcuhome-sdk",
+      "package": "mcuhome-sdk",
+      "asset": "mcuhome-sdk-*.tar.zst"
+    }
+  },
+  "version": 1
+}

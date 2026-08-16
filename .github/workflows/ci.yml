@@ -40,8 +40,10 @@ jobs:
         run: pytest -q
 
       - name: Verify the published sources
+        # Every source publishing.json declares, so adding one needs no
+        # workflow change.
         run: |
-          for source in sdk; do
+          for source in $(jq -r '.sources | keys[]' publishing.json); do
             python verify.py "$source" --anchor anchor.json
           done
 
@@ -49,4 +51,6 @@ jobs:
         # Fails when a document is closer to expiry than its warning
         # threshold — for keys.json that is the signal to arrange a root
         # ceremony, which nothing automatic can do.
-        run: python -m mcuhome_packages status --source sdk
+        run: |
+          python -m mcuhome_packages status \
+            --source $(jq -r '.sources | keys[]' publishing.json | tr '\n' ' ')

@@ -1,30 +1,33 @@
 # SPDX-FileCopyrightText: 2026 The MCUHome Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-# Publication PULLS: this repository fetches a release asset from the SDK
-# repository, which is public, so nothing here needs write access to
-# another repository — no cross-repository token, no app, no long-lived
-# secret beyond the publisher key itself.
+# Publication PULLS: this repository fetches a release asset from the
+# repository that produced it, which is public, so nothing here needs
+# write access to another repository — no cross-repository token, no app,
+# no long-lived secret beyond the publisher key itself.
 #
 # It is workflow_dispatch only, on purpose. Releasing is a deliberate act
 # — the same reason the archive is built from a commit and cut once — and
 # a trigger that fired on its own would make it an accident waiting for a
 # tag.
+#
+# Nothing below names the SDK. Which upstream release feeds which source
+# is declared in publishing.json, so a second source is an entry in that
+# file rather than a fork of this workflow — and an unknown source name
+# is a refusal that lists the ones that exist.
 
 name: Publish a package
 
 on:
   workflow_dispatch:
     inputs:
-      tag:
-        description: "The mcuhome-sdk release tag to publish, e.g. v0.2.0"
-        required: true
       source:
-        description: "Which source to publish into"
+        description: "Which source to publish into (see publishing.json)"
         required: true
         default: sdk
-        type: choice
-        options: [sdk]
+      tag:
+        description: "The upstream release tag to publish, e.g. v0.1.0"
+        required: true
 
 permissions:
   contents: read
@@ -32,8 +35,8 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    # Holds the publisher key, and is restricted to this branch so that
-    # no workflow on any other ref can reach it.
+    # Holds the publisher key, and is restricted to protected branches so
+    # that no workflow on any other ref can reach it.
     environment: production
     permissions:
       contents: write
@@ -47,14 +50,31 @@ jobs:
       - name: Install
         run: pip install -e .
 
+      - name: Resolve where this source's packages come from
+        id: source
+        env:
+          SOURCE: ${{ inputs.source }}
+        run: |
+          set -euo pipefail
+          if ! jq -e --arg s "$SOURCE" '.sources[$s]' publishing.json >/dev/null; then
+            known=$(jq -r '.sources | keys | join(", ")' publishing.json)
+            echo "::error::publishing.json knows no source '$SOURCE'. It knows: $known"
+            exit 1
+          fi
+          jq -r --arg s "$SOURCE" '.sources[$s]
+            | "repository=\(.repository)", "package=\(.package)", "asset=\(.asset)"' \
+            publishing.json >> "$GITHUB_OUTPUT"
+
       - name: Fetch the release asset
         env:
           GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ steps.source.outputs.repository }}
+          ASSET: ${{ steps.source.outputs.asset }}
         run: |
           gh release download "${{ inputs.tag }}" \
-            --repo mcu-home/mcuhome-sdk \
-            --pattern 'mcuhome-sdk-*.tar.zst' \
-            --pattern 'mcuhome-sdk-*.tar.zst.sha256' \
+            --repo "$REPOSITORY" \
+            --pattern "$ASSET" \
+            --pattern "$ASSET.sha256" \
             --dir incoming
 
       - name: Check the bytes against the sidecar the build wrote
@@ -65,21 +85,23 @@ jobs:
       - name: Record it in the source
         env:
           MCUHOME_PUBLISHER_KEYS: ${{ secrets.PUBLISHER_KEY }}
+          SOURCE: ${{ inputs.source }}
+          PACKAGE: ${{ steps.source.outputs.package }}
         run: |
           set -euo pipefail
-          archive=$(ls incoming/mcuhome-sdk-*.tar.zst)
-          name=$(basename "$archive")
-          version=${name#mcuhome-sdk-}
+          archive=$(ls incoming/"$PACKAGE"-*.tar.zst)
+          filename=$(basename "$archive")
+          version=${filename#"$PACKAGE"-}
           version=${version%.tar.zst}
           # The file has to be in the source before the index names it:
           # `file` is relative to the source, and a mirror copies the
           # directory, not a link.
-          cp "$archive" "$archive.sha256" "${{ inputs.source }}/"
+          cp "$archive" "$archive.sha256" "$SOURCE/"
           python -m mcuhome_packages add \
-            --source "${{ inputs.source }}" \
-            --name mcuhome-sdk \
+            --source "$SOURCE" \
+            --name "$PACKAGE" \
             --version "$version" \
-            --file "$name" \
+            --file "$filename" \
             --sha256 "$(sha256sum "$archive" | cut -d' ' -f1)" \
             --size "$(stat -c%s "$archive")"
 
@@ -87,9 +109,11 @@ jobs:
         run: python verify.py "${{ inputs.source }}" --anchor anchor.json
 
       - name: Commit
+        env:
+          SOURCE: ${{ inputs.source }}
         run: |
           git config user.name  'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add "${{ inputs.source }}"
-          git commit -m "feat(${{ inputs.source }}): publish ${{ inputs.tag }}"
+          git add "$SOURCE"
+          git commit -m "feat($SOURCE): publish ${{ inputs.tag }}"
           git push
