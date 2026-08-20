@@ -22,7 +22,7 @@ from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from mcuhome_packages.keys import SigningKey
+from mcuhome.packagetool.keys import SigningKey
 
 __all__ = [
     "INDEX_EXPIRY_DAYS",

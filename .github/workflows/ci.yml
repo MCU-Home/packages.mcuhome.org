@@ -42,7 +42,7 @@ jobs:
       - name: The catalogue must match the declared sources
         # sources.json is generated; a stale one is a directory that lies.
         run: |
-          python -m mcuhome_packages catalog
+          python -m mcuhome.packagetool catalog
           git diff --exit-code sources.json
 
       - name: Verify the published sources
@@ -58,5 +58,5 @@ jobs:
         # threshold — for keys.json that is the signal to arrange a root
         # ceremony, which nothing automatic can do.
         run: |
-          python -m mcuhome_packages status \
+          python -m mcuhome.packagetool status \
             --source $(jq -r '.sources | keys[]' publishing.json | tr '\n' ' ')

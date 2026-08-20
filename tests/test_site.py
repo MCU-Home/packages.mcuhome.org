@@ -23,8 +23,8 @@ from pathlib import Path
 
 import pytest
 
-from mcuhome_packages.catalog import CATALOG_FILE, build_catalog
-from mcuhome_packages.source import INDEX_FILE
+from mcuhome.packagetool.catalog import CATALOG_FILE, build_catalog
+from mcuhome.packagetool.source import INDEX_FILE
 
 ROOT = Path(__file__).resolve().parent.parent
 PAGES = ["index.html", "browser.html"]
@@ -38,7 +38,7 @@ def catalog() -> dict:
 def test_the_catalogue_is_up_to_date(catalog: dict) -> None:
     publishing = json.loads((ROOT / "publishing.json").read_text(encoding="utf-8"))
     assert catalog == build_catalog(publishing), (
-        "sources.json is stale — run: python -m mcuhome_packages catalog"
+        "sources.json is stale — run: python -m mcuhome.packagetool catalog"
     )
 
 

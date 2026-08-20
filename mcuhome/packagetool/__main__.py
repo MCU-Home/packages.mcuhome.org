@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 The MCUHome Contributors
 # SPDX-License-Identifier: Apache-2.0
-"""The publishing tool: ``python -m mcuhome_packages <command>``.
+"""The publishing tool: ``python -m mcuhome.packagetool <command>``.
 
 Everything an operator or a workflow does to a source goes through here,
 so that "how a document is written" has exactly one implementation. What
@@ -26,16 +26,16 @@ import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from mcuhome_packages.catalog import CATALOG_FILE, write_catalog
-from mcuhome_packages.documents import dump, parse_stamp, stamp
-from mcuhome_packages.keys import (
+from mcuhome.packagetool.catalog import CATALOG_FILE, write_catalog
+from mcuhome.packagetool.documents import dump, parse_stamp, stamp
+from mcuhome.packagetool.keys import (
     PUBLIC_SUFFIX,
     SigningKey,
     generate,
     load_private,
     load_private_pem,
 )
-from mcuhome_packages.source import (
+from mcuhome.packagetool.source import (
     INDEX_FILE,
     KEYS_FILE,
     MIRRORS_FILE,
@@ -92,7 +92,9 @@ def _now(argument: str | None) -> datetime:
 
 
 def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(prog="mcuhome_packages", description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(
+        prog="mcuhome-packagetool", description=__doc__.splitlines()[0]
+    )
     parser.add_argument("--now", help="ISO timestamp to use instead of the clock (tests)")
     commands = parser.add_subparsers(dest="command", required=True)
 

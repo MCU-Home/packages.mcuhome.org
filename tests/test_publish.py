@@ -17,8 +17,8 @@ from pathlib import Path
 import pytest
 from make_vectors import BASE, NOW, VECTORS, key, public
 
-from mcuhome_packages.documents import parse_stamp
-from mcuhome_packages.source import (
+from mcuhome.packagetool.documents import parse_stamp
+from mcuhome.packagetool.source import (
     INDEX_FILE,
     KEYS_FILE,
     MIRRORS_FILE,
@@ -106,8 +106,8 @@ def test_a_document_must_advance(source: Path) -> None:
 def test_an_entry_lands_in_the_part_that_covers_it(source: Path) -> None:
     from hashlib import sha256
 
-    from mcuhome_packages.documents import dump, write_signed
-    from mcuhome_packages.source import part_filename
+    from mcuhome.packagetool.documents import dump, write_signed
+    from mcuhome.packagetool.source import part_filename
 
     covers = {"versions": {"min": "1.0.0", "max": "1.9999.0"}}
     payload = dump({"packages": {}})
@@ -188,7 +188,7 @@ def test_rotating_keys_archives_the_predecessor(source: Path) -> None:
 
 
 def test_keygen_never_overwrites(tmp_path: Path) -> None:
-    from mcuhome_packages.keys import generate
+    from mcuhome.packagetool.keys import generate
 
     generate(tmp_path, "root-x")
     with pytest.raises(SystemExit, match="refusing to overwrite"):

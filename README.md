@@ -5,7 +5,7 @@ against, and the tooling that publishes them. Served as
 [packages.mcuhome.org](https://packages.mcuhome.org) via GitHub Pages.
 
 The design — layout, trust model, and the rule a client follows — is
-[ADR 0025](https://github.com/mcu-home/mcuhome/blob/main/docs/adr/draft/0025-package-distribution.md)
+[ADR 0025](https://github.com/mcu-home/mcuhome-workbench/blob/main/docs/adr/draft/0025-package-distribution.md)
 in the flagship repository. This README is how to operate it.
 
 ## What is published here
@@ -91,10 +91,10 @@ Publishing itself is a click, not a command:
 
 ```sh
 # Renew the publisher-signed documents before they expire (weekly, in CI)
-python -m mcuhome_packages refresh --source sdk
+python -m mcuhome.packagetool refresh --source sdk
 
 # How long is everything still valid?
-python -m mcuhome_packages status --source sdk
+python -m mcuhome.packagetool status --source sdk
 ```
 
 Nothing is ever replaced: a published version, an index entry and a
@@ -102,8 +102,8 @@ superseded key set stay forever. The only prunable artefact is an index
 part no head references any more, and only after 90 days:
 
 ```sh
-python -m mcuhome_packages prune --source sdk          # report
-python -m mcuhome_packages prune --source sdk --delete # act
+python -m mcuhome.packagetool prune --source sdk          # report
+python -m mcuhome.packagetool prune --source sdk --delete # act
 ```
 
 ## Keys
@@ -121,8 +121,8 @@ is separate, short-lived, and replaceable without touching a client.
 ### Rotating the publisher key (yearly, or after a leak)
 
 ```sh
-python -m mcuhome_packages keygen --dir <keydir> --name publisher-sdk-2
-python -m mcuhome_packages init --source sdk … --publisher <both .pub.json files> …
+python -m mcuhome.packagetool keygen --dir <keydir> --name publisher-sdk-2
+python -m mcuhome.packagetool init --source sdk … --publisher <both .pub.json files> …
 ```
 
 During the overlap the secret holds **both** PEM blocks, so `index.json`

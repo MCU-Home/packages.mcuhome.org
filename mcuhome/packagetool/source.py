@@ -32,7 +32,7 @@ from pathlib import Path
 
 from packaging.version import InvalidVersion, Version
 
-from mcuhome_packages.documents import (
+from mcuhome.packagetool.documents import (
     INDEX_EXPIRY_DAYS,
     KEYS_EXPIRY_DAYS,
     MIRRORS_EXPIRY_DAYS,
@@ -42,7 +42,7 @@ from mcuhome_packages.documents import (
     header,
     write_signed,
 )
-from mcuhome_packages.keys import SigningKey
+from mcuhome.packagetool.keys import SigningKey
 
 __all__ = [
     "INDEX_FILE",

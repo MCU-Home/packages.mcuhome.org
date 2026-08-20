@@ -42,7 +42,7 @@ jobs:
         env:
           MCUHOME_PUBLISHER_KEYS: ${{ secrets.PUBLISHER_KEY }}
         run: |
-          python -m mcuhome_packages refresh \
+          python -m mcuhome.packagetool refresh \
             --source $(jq -r '.sources | keys[]' publishing.json | tr '\n' ' ')
 
       - name: Verify
@@ -65,5 +65,5 @@ jobs:
       - name: Report remaining validity
         # Runs last so a failing warning cannot cost the refresh above.
         run: |
-          python -m mcuhome_packages status \
+          python -m mcuhome.packagetool status \
             --source $(jq -r '.sources | keys[]' publishing.json | tr '\n' ' ')

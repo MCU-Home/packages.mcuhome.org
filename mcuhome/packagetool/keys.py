@@ -129,7 +129,7 @@ def generate(directory: Path, name: str) -> SigningKey:
     key = SigningKey(keyid=key_id(private.public_key()), private=private)
     # Written through the same dumper the documents use, so a public key
     # file and a document agree byte for byte about how a key is spelled.
-    from mcuhome_packages.documents import dump
+    from mcuhome.packagetool.documents import dump
 
     public_path.write_bytes(
         dump({"keyid": key.keyid, "public": public_b64(key.public), "name": name})

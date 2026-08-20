@@ -11,7 +11,7 @@ this file and prose disagree, this file is the one that was tested.
 **Deliberately standalone.** It imports the standard library and
 ``cryptography`` and nothing of this repository, so it can be copied next
 to a mirrored directory and run. That costs a little duplication with
-``mcuhome_packages/`` and buys a verifier anyone can audit in one sitting.
+``mcuhome/packagetool/`` and buys a verifier anyone can audit in one sitting.
 
 **It verifies; it does not fetch.** The input is a source you already
 have — a mirrored directory, a cache, a checkout. Choosing a mirror,

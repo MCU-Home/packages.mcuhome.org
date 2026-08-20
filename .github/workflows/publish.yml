@@ -97,7 +97,7 @@ jobs:
           # `file` is relative to the source, and a mirror copies the
           # directory, not a link.
           cp "$archive" "$archive.sha256" "$SOURCE/"
-          python -m mcuhome_packages add \
+          python -m mcuhome.packagetool add \
             --source "$SOURCE" \
             --name "$PACKAGE" \
             --version "$version" \

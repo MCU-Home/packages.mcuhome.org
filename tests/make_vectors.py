@@ -29,15 +29,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from mcuhome_packages.documents import dump, write_signed  # noqa: E402
-from mcuhome_packages.keys import (  # noqa: E402
+from mcuhome.packagetool.documents import dump, write_signed  # noqa: E402
+from mcuhome.packagetool.keys import (  # noqa: E402
     SigningKey,
     generate,
     key_id,
     load_private,
     public_b64,
 )
-from mcuhome_packages.source import (  # noqa: E402
+from mcuhome.packagetool.source import (  # noqa: E402
     INDEX_FILE,
     KEYS_FILE,
     MIRRORS_FILE,
