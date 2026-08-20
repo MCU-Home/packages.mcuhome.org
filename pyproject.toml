@@ -15,7 +15,7 @@ build-backend = "setuptools.build_meta"
 name = "mcuhome-packagetool"
 version = "0.1.0"
 description = "Publishing tooling and reference verifier for packages.mcuhome.org"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 license = "Apache-2.0"
 dependencies = [
     "cryptography>=42",
@@ -33,10 +33,10 @@ py-modules = ["verify"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests/python"]

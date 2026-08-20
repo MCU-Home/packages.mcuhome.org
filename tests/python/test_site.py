@@ -26,7 +26,7 @@ import pytest
 from mcuhome.packagetool.catalog import CATALOG_FILE, build_catalog
 from mcuhome.packagetool.source import INDEX_FILE
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 PAGES = ["index.html", "browser.html"]
 
 

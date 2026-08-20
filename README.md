@@ -163,7 +163,7 @@ ruff check . && ruff format --check .
 python tests/make_vectors.py   # regenerate the corpus
 ```
 
-The test vectors in `tests/vectors/` are the point of the corpus: they
+The test vectors in `tests/python/vectors/` are the point of the corpus: they
 let a *client* implementation be tested against the same cases before
 that client exists — valid, expired, rolled back, wrong key, revoked
 (retired and compromised), tampered index, tampered part, dual-signed

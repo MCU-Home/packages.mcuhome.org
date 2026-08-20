@@ -26,7 +26,7 @@ import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from mcuhome.packagetool.documents import dump, write_signed  # noqa: E402
