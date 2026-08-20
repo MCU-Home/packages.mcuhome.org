@@ -1,171 +1,105 @@
-# packages.mcuhome.org
+# mcuhome-packagetool
 
-The **package host**: the hash-pinned packages MCUHome tools build
-against, and the tooling that publishes them. Served as
-[packages.mcuhome.org](https://packages.mcuhome.org) via GitHub Pages.
+`mcuhome-packagetool` is MCUHome's package host: the static site at
+`packages.mcuhome.org`, the tool that publishes into it, and the reference
+verifier clients check it with. It is where a released SDK package becomes
+something a build pins by hash and signature, not by trusting a URL.
 
-The design — layout, trust model, and the rule a client follows — is
-[ADR 0025](https://github.com/mcu-home/mcuhome-workbench/blob/main/docs/adr/draft/0025-package-distribution.md)
-in the flagship repository. This README is how to operate it.
+## What this repository holds
 
-## What is published here
+- `sdk/` — the published MCUHome SDK source: a self-contained directory carrying its own root keys, mirror list, signed index and package files.
+- `verify.py` — the normative reference verifier, standalone so it can be copied next to a mirrored source and run with the standard library and `cryptography`.
+- `mcuhome/packagetool/` — the publishing tool: it lays a source down, records a package, renews the publisher-signed documents and reports how much validity is left.
+- `anchor.json` — the root key set, published so a client can compare it against the anchor it already holds; fetching it at verification time is not verification.
+- The pages the host serves, and `sources.json`, the unsigned directory of sources generated from `publishing.json` — a listing for a human to browse, with no authority over any source.
 
-Each top-level directory is a **source**: self-contained, independently
-signed, independently mirrorable, and silent about every other
-directory. Today there is one:
+## Using it
 
-| Source | Holds |
+A source is a plain directory, and everything needed to trust it is inside:
+the packages, the key set that signs the index, and the mirror list. Verifying
+one is therefore local work on bytes you already have — a mirror, a cache or a
+checkout — against a root anchor supplied out of band:
+
+```sh
+python verify.py sdk --anchor anchor.json
+```
+
+Operating a source is the other half: `python -m mcuhome.packagetool` lays a
+source down, records a package in it, renews its signatures and reports how
+long each document is still valid.
+
+## How it fits into MCUHome
+
+The packages served here are the release archives of
+[mcuhome-sdk](https://github.com/mcu-home/mcuhome-sdk), pulled from a tagged
+release and recorded into the `sdk` source by the publish workflow in this
+repository. A source's `index.json` names each package with its size and
+sha256, which is what
+[mcuhome-workbench](https://github.com/mcu-home/mcuhome-workbench) resolves an
+SDK pin against and what
+[mcuhome-buildserver](https://github.com/mcu-home/mcuhome-buildserver) finds a
+package's bytes by. Because a source is self-contained, a copy of one is worth
+exactly as much as the original.
+
+## Layout
+
+| Path | Purpose |
 |---|---|
-| `sdk/` | the `mcuhome-sdk-<version>.tar.zst` package a build compiles from |
+| `sdk/` | The published MCUHome SDK source: signed documents and package files |
+| `mcuhome/` | The publishing tool — keys, signed documents, sources, catalogue |
+| `tests/` | The suite, and the fixed source directories it verifies, one per outcome |
+| `.github/` | The publish, refresh and check workflows |
 
-```
-sdk/
-├── keys.json      keys.json.sig     3 root keys (threshold 2), and the publisher keys they authorise
-├── keys/…                           every superseded key set, kept forever
-├── mirrors.json   mirrors.json.sig  where this source's data may be fetched
-├── index.json     index.json.sig    which file and which bytes, for every version
-├── index-…json                      immutable index parts, when the index is split
-└── mcuhome-sdk-<version>.tar.zst    plus a .sha256 sidecar
-```
+## Working on this repository
 
-Deliberately **not** here: container images (GHCR), Python
-distributions (PyPI), OTA images.
-
-[`browser.html`](browser.html) lists every package of every source in one
-table — split indexes included — with per-source switches, search,
-sorting and paging. It is an **inspection tool, not a distribution
-channel**: it verifies nothing and *cannot*, because a page served by
-this host can say nothing about this host. A host serving a modified
-package would serve a matching hash and this very page, with the check
-taken out. The page says so in a banner, and every download goes through
-a dialog that says it again; the anchor lives in the tool for exactly
-this reason.
-
-It loads no external script either: a page that displays hashes must not
-execute code from somebody else's server, so its hundred lines are
-vanilla JavaScript and a test keeps it that way. `sources.json` is the
-same list as data, generated from `publishing.json`; it is **unsigned
-discovery only** — nothing above a source has authority, and a tool never
-learns of a source from there.
-
-## Verifying
-
-`verify.py` is the normative reference implementation — the rule every
-client follows, in executable form. It verifies a source you already
-have; fetching and mirror selection are the client's business and cannot
-change a verdict.
+The repository wants Python 3.13 and its `dev` extra; beyond `cryptography`
+and `packaging` it uses the standard library. The gate is lint, the unit suite
+against the fixed test vectors, and the regenerated catalogue matched against
+`publishing.json`:
 
 ```sh
-python verify.py sdk/ --anchor <anchor.json>
-```
-
-An **anchor** is the root key set you trust: the *public* halves of the
-three root keys, their key ids, and the threshold. Deliberately nothing
-else — the publisher keys are not in it, because they are learned from
-`keys.json`, which the roots sign. That is what lets a publisher key
-rotate yearly without any tool being updated.
-
-It is configuration, never something this host supplies. A tool carries
-the anchor for our sources built in (it ships inside the release, on the
-same trust as the tool itself); an operator of a private registry
-supplies theirs out of band. `anchor.json` is published here so it can be
-**compared** against what a tool has built in — downloading it at
-verification time is not verification, it is trusting the host again.
-
-## Publishing
-
-Publication **pulls**: this repository fetches a release asset from the
-SDK repository, so no repository holds write access to another and there
-is no cross-repository secret.
-
-Which upstream release feeds which source is declared in
-`publishing.json` — that, and the `source` input, is how the workflow
-knows what it is publishing. A second source is an entry in that file,
-not a second workflow; CI and the weekly refresh iterate over the same
-list.
-
-Publishing itself is a click, not a command:
-
-> **Actions → "Publish a package" → Run workflow**, with `source` and the
-> upstream `tag`.
-
-```sh
-# Renew the publisher-signed documents before they expire (weekly, in CI)
-python -m mcuhome.packagetool refresh --source sdk
-
-# How long is everything still valid?
-python -m mcuhome.packagetool status --source sdk
-```
-
-Nothing is ever replaced: a published version, an index entry and a
-superseded key set stay forever. The only prunable artefact is an index
-part no head references any more, and only after 90 days:
-
-```sh
-python -m mcuhome.packagetool prune --source sdk          # report
-python -m mcuhome.packagetool prune --source sdk --delete # act
-```
-
-## Keys
-
-| Role | Count | Where the private key lives | Signs |
-|---|---|---|---|
-| root | 3, threshold 2 | offline, physically separated | `keys.json` only |
-| publisher | 1 per source | the repository's protected `production` environment | `index.json`, `mirrors.json` |
-
-3-of-which-2 is the smallest configuration that survives both *losing* a
-key and *someone stealing* one. The publisher key is the one that has to
-be online, so it is the one that will eventually leak — which is why it
-is separate, short-lived, and replaceable without touching a client.
-
-### Rotating the publisher key (yearly, or after a leak)
-
-```sh
-python -m mcuhome.packagetool keygen --dir <keydir> --name publisher-sdk-2
-python -m mcuhome.packagetool init --source sdk … --publisher <both .pub.json files> …
-```
-
-During the overlap the secret holds **both** PEM blocks, so `index.json`
-and `mirrors.json` carry both signatures and old and new clients read the
-same file. When the overlap ends, the outgoing key is listed in
-`revoked` as `retired` — its earlier signatures stay valid. A key that
-*leaked* is listed as `compromised` instead: a thief can backdate, so
-its past is worth no more than its future, and every signature it ever
-made becomes invalid.
-
-### Renewing `keys.json`
-
-`keys.json` is root-signed and expires after a year, so renewing it is a
-deliberate act with the offline keys — CI cannot do it, by construction,
-and a refresh path that could would mean the roots were not offline. The
-`status` command warns 60 days ahead, and CI fails on that warning.
-
-**Until v1.0 these are development keys**, generated without passphrases
-and kept in the workspace. The v1.0 release regenerates them properly,
-re-signs the published documents, and raises `min_client` to 2 so no
-pre-v1 client — which may lack a security fix — can use this host.
-
-## Mirroring
-
-A mirror is a copy of a source directory. No path rewriting, no
-per-mirror layout: whatever is below the base URL is identical
-everywhere, so `rsync`, `wget -r` or a bucket sync is the whole job. A
-mirror may carry one source and not another. To be listed in a source's
-`mirrors.json`, open an issue.
-
-## Development
-
-```sh
-python3 -m venv .venv && . .venv/bin/activate
 pip install -e '.[dev]'
-pytest                      # the reference verifier against the committed corpus
-ruff check . && ruff format --check .
-python tests/make_vectors.py   # regenerate the corpus
+ruff check . && ruff format --check . && pytest -q
+python -m mcuhome.packagetool catalog && git diff --exit-code sources.json
 ```
 
-The test vectors in `tests/python/vectors/` are the point of the corpus: they
-let a *client* implementation be tested against the same cases before
-that client exists — valid, expired, rolled back, wrong key, revoked
-(retired and compromised), tampered index, tampered part, dual-signed
-across a rotation overlap, `min_client` too high, below threshold, and a
-key set two rotations past the anchor.
+The same commands run on every push and pull request, followed there by the
+reference verifier over every source `publishing.json` declares, so a broken
+signature or an expiring document fails here rather than in somebody's build.
+
+## Configuration
+
+`publishing.json` declares each source: which upstream repository and
+release-asset pattern feed it, and the title and description the catalogue
+publishes for it. Adding a source is an entry in that file, not a change to a
+workflow. The publisher key the tool signs with comes from `--publisher-key`
+or from `MCUHOME_PUBLISHER_KEYS`, which holds its PEM.
+
+## Security
+
+A package is trusted by signature and hash, never by the host or the mirror
+that served it: root keys sign `keys.json` and stay offline, the publisher key
+signs `index.json` and `mirrors.json` from a protected CI environment, and a
+verdict is reached against an anchor the client already holds. Nothing
+published is deleted — a superseded part file past its grace period is the
+only artefact the tool will remove. Report a suspected key or signature
+compromise through
+[the organization's security policy](https://github.com/mcu-home/.github/blob/main/SECURITY.md).
+
+## Documentation
+
+- [`verify.py`](verify.py) — what a client must check, in executable form
+- [`mcuhome/packagetool/`](mcuhome/packagetool/) — the publishing tool, documented module by module
+- [packages.mcuhome.org](https://packages.mcuhome.org) — the sources this repository serves
+- [The MCUHome organization](https://github.com/mcu-home) — the other repositories of the project
+
+## Contributing and support
+
+Bug reports and questions go to this repository's
+[issue tracker](https://github.com/mcu-home/mcuhome-packagetool/issues).
+How a change is submitted is described in
+[the organization's contributing rules](https://github.com/mcu-home/.github/blob/main/CONTRIBUTING.md).
+
+## License
+
+Apache License 2.0, see [`LICENSE`](LICENSE).
